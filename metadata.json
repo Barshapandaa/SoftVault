@@ -1,0 +1,8 @@
+{
+  "name": "SoftVault",
+  "description": "A media authenticity and ownership protection platform using Gemini AI and cryptographic hash chains to prove content origin and detect theft.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": []
+}

@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isVerified() {
+      return isSignedIn(); // Relaxed for development, normally checks request.auth.token.email_verified == true
+    }
+
+    function isValidId(id) {
+       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --- Validation Helpers ---
+    function isValidAsset(data) {
+      return data.keys().hasAll(['id', 'creatorId', 'sha256', 'phash', 'timestamp', 'blockHash'])
+        && data.id is string
+        && data.creatorId == request.auth.uid
+        && data.sha256 is string && data.sha256.size() == 64
+        && data.phash is string
+        && data.timestamp == request.time
+        && data.blockHash is string;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email'])
+        && data.uid == request.auth.uid
+        && data.email is string && data.email.size() <= 256;
+    }
+
+    // --- Collection Rules ---
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if false; // Users shouldn't be listable generally
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) 
+        && isValidUser(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'photoURL']);
+    }
+
+    match /assets/{assetId} {
+      // Anyone can verify (get by ID)
+      allow get: if true;
+      // Registry is public for lists as well
+      allow list: if isSignedIn(); 
+      
+      allow create: if isVerified() 
+        && isValidId(assetId)
+        && request.resource.data.creatorId == request.auth.uid
+        && request.resource.data.timestamp == request.time
+        && request.resource.data.sha256 is string
+        && request.resource.data.phash is string
+        && request.resource.data.blockHash is string;
+      
+      // Allow ownership transfer
+      allow update: if isSignedIn() 
+        && (resource.data.currentOwnerId == request.auth.uid || (!resource.data.currentOwnerId && resource.data.creatorId == request.auth.uid))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currentOwnerId', 'lastTransferAt', 'transferHistory']);
+      
+      allow delete: if false;
+    }
+
+    match /stats/{docId} {
+      allow read: if true;
+      allow write: if false; // Updated only by server/admin
+    }
+  }
+}

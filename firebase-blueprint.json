@@ -1,0 +1,61 @@
+{
+  "entities": {
+    "Asset": {
+      "title": "Media Asset",
+      "description": "Represents a registered media file with authenticity proof.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "creatorId": { "type": "string" },
+        "creatorName": { "type": "string" },
+        "sha256": { "type": "string" },
+        "phash": { "type": "string" },
+        "exif": { "type": "object" },
+        "geminiCheck": { "type": "object" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "location": { "type": "object" },
+        "previousBlockId": { "type": "string" },
+        "blockHash": { "type": "string" },
+        "blockchainTxHash": { "type": "string" }
+      },
+      "required": ["id", "creatorId", "sha256", "phash", "timestamp"]
+    },
+    "User": {
+      "title": "User Profile",
+      "description": "Represents a user of the platform.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "registeredAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "GlobalStats": {
+      "title": "Global Statistics",
+      "description": "Aggregated stats for the dashboard.",
+      "type": "object",
+      "properties": {
+        "totalAssets": { "type": "number" },
+        "totalCreators": { "type": "number" },
+        "disputesResolved": { "type": "number" }
+      }
+    }
+  },
+  "firestore": {
+    "/assets/{assetId}": {
+      "schema": "Asset",
+      "description": "Collection of all registered media assets."
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile data."
+    },
+    "/stats/global": {
+      "schema": "GlobalStats",
+      "description": "Global statistics document."
+    }
+  }
+}
